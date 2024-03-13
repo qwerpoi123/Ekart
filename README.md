@@ -169,89 +169,90 @@ web interface url path, as well as the datasource url.
 
 ## Pipeline script
 
-pipeline {
-    agent any
-    
-    tools{
+
+    pipeline {
+        agent any
         
-        maven 'maven3'
-        jdk 'jdk17'
-    }
-    
-    environment {
-        
-        SCANNER_HOME = tool 'sonar-scanner'
-    }
-    
-    
-    
-    stages {
-        stage('Git Checkout') {
-            steps {
-                git branch: 'main', url:  'https://github.com/qwerpoi123/Ekart.git'
-            }
+        tools{
+            
+            maven 'maven3'
+            jdk 'jdk17'
         }
         
-        stage('Compile'){
-            steps{
-                sh "mvn compile"
-            }
-        }
-        
-        stage('OWASP FS Scan'){
-            steps{
-                dependencyCheck additionalArguments: '--scan./', odcInstallation: 'DC'
-                    dependencyCheckPublisher pattern: '***/dependency-check-report.xml'
-            }
+        environment {
+            
+            SCANNER_HOME = tool 'sonar-scanner'
         }
         
         
         
-        
-        stage('Build'){
-            steps {
-                sh "mvn package -DskipTests=true"
+        stages {
+            stage('Git Checkout') {
+                steps {
+                    git branch: 'main', url:  'https://github.com/qwerpoi123/Ekart.git'
+                }
             }
-        }
-        
-        stage('Build & Tag Docker Image'){
-            steps {
-                script{
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker build -t shopping-cart:dev -f docker/Dockerfile ."
-                        sh "docker tag shopping-cart:dev pramodhub546/shopping-cart:dev"
+            
+            stage('Compile'){
+                steps{
+                    sh "mvn compile"
+                }
+            }
+            
+            stage('OWASP FS Scan'){
+                steps{
+                    dependencyCheck additionalArguments: '--scan./', odcInstallation: 'DC'
+                        dependencyCheckPublisher pattern: '***/dependency-check-report.xml'
+                }
+            }
+            
+            
+            
+            
+            stage('Build'){
+                steps {
+                    sh "mvn package -DskipTests=true"
+                }
+            }
+            
+            stage('Build & Tag Docker Image'){
+                steps {
+                    script{
+                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            sh "docker build -t shopping-cart:dev -f docker/Dockerfile ."
+                            sh "docker tag shopping-cart:dev pramodhub546/shopping-cart:dev"
+                        }
                     }
                 }
             }
-        }
-        
-        stage('Push Docker Image'){
-            steps {
-                script{
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker push pramodhub546/shopping-cart:dev"
-                        
+            
+            stage('Push Docker Image'){
+                steps {
+                    script{
+                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            sh "docker push pramodhub546/shopping-cart:dev"
+                            
+                        }
                     }
                 }
             }
-        }
-        
-        
-        
-        
-        stage('Deploy Application'){
-            steps {
-                script{
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh "docker run -d --name ekart -p 8070:8070 pramodhub546/shopping-cart:dev"
-                        
+            
+            
+            
+            
+            stage('Deploy Application'){
+                steps {
+                    script{
+                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            sh "docker run -d --name ekart -p 8070:8070 pramodhub546/shopping-cart:dev"
+                            
+                        }
                     }
                 }
             }
+            
         }
-        
-    }
-}    
+    }    
             
                 
                 
